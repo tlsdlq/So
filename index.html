@@ -5,74 +5,119 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>캐릭터 현황판</title>
     <style>
+        /* 기본 스타일 설정 */
         body {
-            font-family: 'Suit', sans-serif;
-            background-color: #f4f4f9;
+            font-family: 'Suit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: #f0f2f5;
             margin: 0;
             padding: 20px;
             display: flex;
             justify-content: center;
         }
+
         .container {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 20px;
             width: 100%;
-            max-width: 1200px;
+            max-width: 600px; /* 모바일 및 데스크탑 적정 너비 */
+            background-color: transparent;
         }
-        .card {
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            padding: 20px;
-            transition: transform 0.2s;
-        }
-        .card:hover {
-            transform: translateY(-5px);
-        }
-        .name {
-            font-size: 1.5rem;
-            font-weight: bold;
+
+        /* 아코디언 버튼 스타일 */
+        .accordion {
+            background-color: #ffffff;
             color: #333;
-            margin-bottom: 15px;
-            border-bottom: 2px solid #eee;
-            padding-bottom: 10px;
-        }
-        .info-row {
-            margin-bottom: 10px;
+            cursor: pointer;
+            padding: 18px;
+            width: 100%;
+            border: none;
+            text-align: left;
+            outline: none;
+            font-size: 1.1rem;
+            font-weight: bold;
+            transition: 0.4s;
+            border-bottom: 1px solid #eee;
+            border-radius: 8px;
+            margin-bottom: 8px;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+
+        /* 마우스 호버 및 활성화 상태 */
+        .active, .accordion:hover {
+            background-color: #e8f0fe;
+            color: #1a73e8;
+        }
+
+        /* 펼쳐질 패널 스타일 */
+        .panel {
+            padding: 0 18px;
+            background-color: white;
+            max-height: 0; /* 기본적으로 닫혀있음 */
+            overflow: hidden;
+            transition: max-height 0.3s ease-out; /* 부드러운 애니메이션 */
+            border-radius: 0 0 8px 8px;
+            margin-top: -8px; /* 버튼과 붙이기 위해 */
+            margin-bottom: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+
+        /* 패널 내부 내용 스타일 */
+        .info-box {
+            padding: 20px 0;
+        }
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 12px;
+            border-bottom: 1px dashed #eee;
+            padding-bottom: 8px;
+        }
+        .info-row:last-child {
+            margin-bottom: 0;
+            border-bottom: none;
         }
         .label {
-            font-weight: bold;
             color: #666;
-            font-size: 0.9rem;
+            font-weight: 500;
         }
         .value {
+            font-weight: bold;
             color: #333;
         }
-        .heart {
-            color: #e91e63;
+        .heart { color: #e91e63; }
+
+        /* 화살표 아이콘 */
+        .icon {
+            transition: transform 0.3s;
+            font-size: 0.8rem;
         }
+        .active .icon {
+            transform: rotate(180deg);
+        }
+
+        /* 안내 메시지 */
         .empty-msg {
             text-align: center;
-            width: 100%;
-            grid-column: 1 / -1;
             color: #888;
+            margin-top: 50px;
+        }
+        code {
+            background: #eee;
+            padding: 2px 5px;
+            border-radius: 4px;
         }
     </style>
 </head>
 <body>
 
-    <div class="container" id="card-container">
-        <!-- 자바스크립트가 이곳에 카드를 생성합니다 -->
+    <div class="container" id="list-container">
+        <!-- 자바스크립트가 이곳에 리스트를 생성합니다 -->
     </div>
 
     <script>
-        // URL에서 파라미터 가져오기
         function getParamsAndRender() {
-            const container = document.getElementById('card-container');
+            const container = document.getElementById('list-container');
             const queryString = window.location.search;
             const urlParams = new URLSearchParams(queryString);
 
@@ -80,41 +125,70 @@
             if ([...urlParams].length === 0) {
                 container.innerHTML = `
                     <div class="empty-msg">
-                        <h2>데이터가 없습니다</h2>
-                        <p>URL 뒤에 <code>?철수=100|학교|공부중&영희=50|집|휴식</code> 형태로 입력해주세요.</p>
+                        <h3>데이터가 없습니다</h3>
+                        <p>주소 뒤에 아래와 같이 입력해보세요:</p>
+                        <p><code>?철수=100|학교|공부중&영희=50|집|휴식</code></p>
                     </div>`;
                 return;
             }
 
-            // 모든 파라미터를 순회하며 카드 생성
+            // 파라미터 순회하며 DOM 생성
             urlParams.forEach((value, key) => {
                 // 값 분리 (호감도|위치|현황)
                 const parts = value.split('|');
-                
-                // 데이터가 부족할 경우를 대비한 안전 장치
                 const affection = parts[0] || '-';
                 const location = parts[1] || '-';
                 const status = parts[2] || '-';
 
-                // HTML 요소 생성
-                const card = document.createElement('div');
-                card.className = 'card';
-                card.innerHTML = `
-                    <div class="name">${key}</div>
-                    <div class="info-row">
-                        <span class="label">❤️ 호감도</span>
-                        <span class="value heart">${affection}</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="label">📍 위치</span>
-                        <span class="value">${location}</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="label">📢 현황</span>
-                        <span class="value">${status}</span>
+                // 1. 전체 래퍼 생성
+                const wrapper = document.createElement('div');
+
+                // 2. 버튼(헤더) 생성
+                const button = document.createElement('button');
+                button.className = 'accordion';
+                button.innerHTML = `
+                    <span>${key}</span>
+                    <span class="icon">▼</span>
+                `;
+
+                // 3. 패널(내용) 생성
+                const panel = document.createElement('div');
+                panel.className = 'panel';
+                panel.innerHTML = `
+                    <div class="info-box">
+                        <div class="info-row">
+                            <span class="label">❤️ 호감도</span>
+                            <span class="value heart">${affection}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="label">📍 위치</span>
+                            <span class="value">${location}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="label">📢 현황</span>
+                            <span class="value">${status}</span>
+                        </div>
                     </div>
                 `;
-                container.appendChild(card);
+
+                // 4. 클릭 이벤트 추가 (펼치기/접기 기능)
+                button.addEventListener('click', function() {
+                    // active 클래스 토글 (색상 변경 및 화살표 회전)
+                    this.classList.toggle('active');
+
+                    // 패널 높이 조절 (애니메이션 효과)
+                    const content = this.nextElementSibling;
+                    if (content.style.maxHeight) {
+                        content.style.maxHeight = null; // 닫기
+                    } else {
+                        content.style.maxHeight = content.scrollHeight + "px"; // 열기 (내용물 높이만큼)
+                    }
+                });
+
+                // 5. 컨테이너에 추가
+                wrapper.appendChild(button);
+                wrapper.appendChild(panel);
+                container.appendChild(wrapper);
             });
         }
 
