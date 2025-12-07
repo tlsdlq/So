@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>캐릭터 현황판</title>
+    <style>
+        body {
+            font-family: 'Suit', sans-serif;
+            background-color: #f4f4f9;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+        .container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            width: 100%;
+            max-width: 1200px;
+        }
+        .card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            padding: 20px;
+            transition: transform 0.2s;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+        }
+        .name {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 10px;
+        }
+        .info-row {
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .label {
+            font-weight: bold;
+            color: #666;
+            font-size: 0.9rem;
+        }
+        .value {
+            color: #333;
+        }
+        .heart {
+            color: #e91e63;
+        }
+        .empty-msg {
+            text-align: center;
+            width: 100%;
+            grid-column: 1 / -1;
+            color: #888;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container" id="card-container">
+        <!-- 자바스크립트가 이곳에 카드를 생성합니다 -->
+    </div>
+
+    <script>
+        // URL에서 파라미터 가져오기
+        function getParamsAndRender() {
+            const container = document.getElementById('card-container');
+            const queryString = window.location.search;
+            const urlParams = new URLSearchParams(queryString);
+
+            // 파라미터가 없을 경우 안내 메시지
+            if ([...urlParams].length === 0) {
+                container.innerHTML = `
+                    <div class="empty-msg">
+                        <h2>데이터가 없습니다</h2>
+                        <p>URL 뒤에 <code>?철수=100|학교|공부중&영희=50|집|휴식</code> 형태로 입력해주세요.</p>
+                    </div>`;
+                return;
+            }
+
+            // 모든 파라미터를 순회하며 카드 생성
+            urlParams.forEach((value, key) => {
+                // 값 분리 (호감도|위치|현황)
+                const parts = value.split('|');
+                
+                // 데이터가 부족할 경우를 대비한 안전 장치
+                const affection = parts[0] || '-';
+                const location = parts[1] || '-';
+                const status = parts[2] || '-';
+
+                // HTML 요소 생성
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.innerHTML = `
+                    <div class="name">${key}</div>
+                    <div class="info-row">
+                        <span class="label">❤️ 호감도</span>
+                        <span class="value heart">${affection}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="label">📍 위치</span>
+                        <span class="value">${location}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="label">📢 현황</span>
+                        <span class="value">${status}</span>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        // 실행
+        getParamsAndRender();
+    </script>
+</body>
+</html>
